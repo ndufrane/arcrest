@@ -1,8 +1,8 @@
 # coding: utf-8
-"""The ArcGIS Server REST API, short for Representational State Transfer, 
+"""The ArcGIS Server REST API, short for Representational State Transfer,
    provides a simple, open Web interface to services hosted by ArcGIS Server.
    All resources and operations exposed by the REST API are accessible through
-   a hierarchy of endpoints or Uniform Resource Locators (URLs) for each GIS 
+   a hierarchy of endpoints or Uniform Resource Locators (URLs) for each GIS
    service published with ArcGIS Server."""
 
 import cgi
@@ -24,7 +24,7 @@ USER_AGENT = "Mozilla/4.0 (arcrest)"
 REQUEST_REFERER_MAGIC_NAME = "HTTPREFERERTOKEN"
 
 # Note that nearly every class below derives from this RestURL class.
-# The reasoning is that every object has an underlying URL resource on 
+# The reasoning is that every object has an underlying URL resource on
 # the REST server. Some are static or near-static, such as a folder or a
 # service's definition, but some URLs are volatile and represent the
 # application of an action, such as Buffering a set of points using the
@@ -97,7 +97,7 @@ class RestURL(object):
         # automatically become a forced multipart upload. Also, force
         # keeping the results around; uploading data multiple times
         # is probably NEVER what anyone wants to do and file handles
-        # can be exhausted. 
+        # can be exhausted.
         self._file_data = file_data
         if file_data:
             self.__cache_request__ = True
@@ -127,7 +127,7 @@ class RestURL(object):
 
         if params:
             # As above, pull out first element from parse_qs' values
-            query_dict = dict((k, v[0]) for k, v in 
+            query_dict = dict((k, v[0]) for k, v in
                                cgi.parse_qs(urllist[3]).items())
             for key, val in params.items():
                 # Lowercase bool string
@@ -142,11 +142,11 @@ class RestURL(object):
                 elif isinstance(val, gptypes.GPString):
                     query_dict[key] = val.value
                 # Just use the wkid of SpatialReferences
-                elif isinstance(val, geometry.SpatialReference): 
+                elif isinstance(val, geometry.SpatialReference):
                     query_dict[key] = val.wkid
                 # If it's a list, make it a comma-separated string
                 elif isinstance(val, (list, tuple, set)):
-                    val = ",".join([str(v.id) 
+                    val = ",".join([str(v.id)
                                     if isinstance(v, Layer)
                                     else str(v) for v in val])
                 # If it's a dictionary, dump as JSON
@@ -197,6 +197,7 @@ class RestURL(object):
     def _contents(self):
         """The raw contents of the URL as fetched, this is done lazily.
            For non-lazy fetching this is accessed in the object constructor."""
+
         if self.__urldata__ is Ellipsis or self.__cache_request__ is False:
             if self._file_data:
                 # Special-case: do a multipart upload if there's file data
@@ -213,17 +214,17 @@ class RestURL(object):
                         multipart_data += val + "\r\n"
                 for k, v in self._file_data.items():
                     fn = os.path.basename(getattr(v, 'name', 'file'))
-                    ct = (mimetypes.guess_type(fn) 
+                    ct = (mimetypes.guess_type(fn)
                             or ("application/octet-stream",))[0]
                     multipart_data += boundary + "\r\n"
                     multipart_data += ('Content-Disposition: form-data; '
                                        'name="%s"; filename="%s"\r\n'
-                                       'Content-Type:%s\r\n\r\n' % 
+                                       'Content-Type:%s\r\n\r\n' %
                                             (k, fn, ct))
                     multipart_data += v.read() + "\r\n"
                 multipart_data += boundary + "--\r\n\r\n"
                 req_dict = {'User-Agent' : USER_AGENT,
-                            'Content-Type': 
+                            'Content-Type':
                                 'multipart/form-data; boundary='+boundary[2:],
                             'Content-Length': str(len(multipart_data))
                             }
@@ -236,7 +237,7 @@ class RestURL(object):
                 req_dict = {'User-Agent' : USER_AGENT}
                 if self._referer:
                     req_dict['Referer'] = self._referer
-                request = compat.urllib2.Request(self.url, self.query 
+                request = compat.urllib2.Request(self.url, self.query
                                                         if self.__post__
                                                         else None,
                                            req_dict)
@@ -334,7 +335,7 @@ class GenerateToken(RestURL):
                 self._referer = url
                 url_tuple = compat.urlsplit(url)
                 urllist = list(url_tuple)
-                query_dict = dict((k, v[0]) for k, v in 
+                query_dict = dict((k, v[0]) for k, v in
                                   cgi.parse_qs(urllist[3]).items())
                 query_dict['username'] = username
                 query_dict['password'] = password
@@ -377,14 +378,14 @@ class GenerateToken(RestURL):
                         html_request = compat.urllib2.Request(relurl,
                                                        compat.urlencode(
                                                                     payload),
-                                                      {'Referer': 
+                                                      {'Referer':
                                                           self._referer})
                         html_response = compat.urllib2.urlopen(html_request).read()
 
                         # Seek out what looks like the redirect hidden form
                         # element in the HTML response
-                        redirect_value = [re.findall('value="(.*?)"', input) 
-                                          for input in 
+                        redirect_value = [re.findall('value="(.*?)"', input)
+                                          for input in
                                             re.findall(
                                                 '<input.*?name="redirect".*?>',
                                                 html_response)]
@@ -401,7 +402,7 @@ class GenerateToken(RestURL):
                                                                    href)
                                     gentokenpayload = {'username': username,
                                                        'password': password,
-                                                       'expiration': 
+                                                       'expiration':
                                                             str(
                                                              self._expiration),
                                                        'client': 'requestip',
@@ -446,13 +447,13 @@ class Folder(RestURL):
 
     @property
     def __members__(self):
-        return sorted(self.foldernames + 
-                      list(self.servicenames) + 
+        return sorted(self.foldernames +
+                      list(self.servicenames) +
                       self.clusternames)
     @property
     def foldernames(self):
         "Returns a list of folder names available from this folder."
-        return [folder.strip('/').split('/')[-1] for folder 
+        return [folder.strip('/').split('/')[-1] for folder
                     in self._json_struct.get('folders', [])]
     @property
     def folders(self):
@@ -461,7 +462,7 @@ class Folder(RestURL):
     @property
     def clusternames(self):
         "Returns a list of cluster names available from this folder."
-        return [cluster.strip('/').split('/')[-1] for cluster 
+        return [cluster.strip('/').split('/')[-1] for cluster
                     in self._json_struct.get('clusters', [])]
     @property
     def clusters(self):
@@ -470,13 +471,13 @@ class Folder(RestURL):
     @property
     def servicenames(self):
         "Give the list of services available in this folder."
-        return set([service['name'].rstrip('/').split('/')[-1] 
+        return set([service['name'].rstrip('/').split('/')[-1]
                         for service in self._json_struct.get('services', [])])
     @property
     def services(self):
         "Returns a list of Service objects available in this folder"
-        return [self._get_subfolder("%s/%s/" % 
-                (s['name'].rstrip('/').split('/')[-1], s['type']), 
+        return [self._get_subfolder("%s/%s/" %
+                (s['name'].rstrip('/').split('/')[-1], s['type']),
                 self._service_type_mapping.get(s['type'], Service)) for s
                 in self._json_struct.get('services', [])]
     @property
@@ -503,11 +504,11 @@ class Folder(RestURL):
             al = attr.rstrip('/').split('/')[-1].split('_')
             servicetype = al.pop()
             untyped_attr = '_'.join(al)
-            matchingservices = [svc for svc in services 
+            matchingservices = [svc for svc in services
                                 if svc['name'] == untyped_attr
                                 and svc['type'] == servicetype]
-            if len(matchingservices) == 1: 
-                return self._get_subfolder("%s/%s/" % 
+            if len(matchingservices) == 1:
+                return self._get_subfolder("%s/%s/" %
                     (untyped_attr, servicetype),
                     self._service_type_mapping.get(servicetype, Service))
         # Then match by service name
@@ -521,14 +522,14 @@ class Folder(RestURL):
             ambiguous = AmbiguousService()
             for svc in matchingservices:
                 attr, servicetype = svc['name'], svc['type']
-                service = self._get_subfolder("%s/%s/" % (attr, servicetype), 
+                service = self._get_subfolder("%s/%s/" % (attr, servicetype),
                     self._service_type_mapping.get(servicetype, Service))
                 setattr(ambiguous, servicetype, service)
             return ambiguous
         # Just one match, can return itself.
         elif len(matchingservices) == 1:
             servicetype = matchingservices[0]['type']
-            return self._get_subfolder("%s/%s/" % (attr, servicetype), 
+            return self._get_subfolder("%s/%s/" % (attr, servicetype),
                 self._service_type_mapping.get(servicetype, Service))
         raise AttributeError("No service or folder named %r found" % attr)
 
@@ -536,8 +537,8 @@ class Folder(RestURL):
 # special case of Folder
 
 class Catalog(Folder):
-    """The catalog resource is the root node and initial entry point into an 
-       ArcGIS Server host. This resource represents a catalog of folders and 
+    """The catalog resource is the root node and initial entry point into an
+       ArcGIS Server host. This resource represents a catalog of folders and
        services published on the host."""
 
     def __init__(self, url, username=None, password=None, token=None,
@@ -573,7 +574,7 @@ class Catalog(Folder):
         super(Catalog, self).__init__(url_)
         # Basically a Folder, but do some really, really rudimentary sanity
         # checking (look for folders/services, make sure format is JSON) so we
-        # can verify this URL behaves like a Folder -- catch errors early 
+        # can verify this URL behaves like a Folder -- catch errors early
         # before any other manipulations go on.
         assert 'folders' in self._json_struct, "No folders in catalog root"
         assert 'services' in self._json_struct, "No services in catalog root"
@@ -648,17 +649,17 @@ class JsonResult(Result):
             detailstring = ", ".join(js['error'].get('details', []))
             if detailstring:
                 detailstring = " -- " + detailstring
-            raise ServerError("ERROR %r: %r%s <%s>" % 
-                               (js['error']['code'], 
-                                js['error']['message'] or 
+            raise ServerError("ERROR %r: %r%s <%s>" %
+                               (js['error']['code'],
+                                js['error']['message'] or
                                     'Unspecified',
                                 detailstring,
                                 self.url))
         elif "status" in js:
             if js['status'] == "error":
                 raise ServerError(''.join(
-                    js.get('messages', 
-                           [js.get('message', 
+                    js.get('messages',
+                           [js.get('message',
                                'Unspecified Error')])))
 
 class JsonPostResult(JsonResult):
@@ -701,7 +702,7 @@ class MapLayer(Layer):
        information about the layer such as its name, type, parent and
        sub-layers, fields, min and max scales, extent, and copyright text."""
 
-    def QueryLayer(self, text=None, Geometry=None, inSR=None, 
+    def QueryLayer(self, text=None, Geometry=None, inSR=None,
                    spatialRel='esriSpatialRelIntersects', where=None,
                    outFields=None, returnGeometry=None, outSR=None,
                    objectIds=None, time=None, maxAllowableOffset=None,
@@ -731,11 +732,11 @@ class MapLayer(Layer):
                                                'spatialRel': spatialRel,
                                                'where': where,
                                                'outFields': outFields,
-                                               'returnGeometry': 
+                                               'returnGeometry':
                                                     returnGeometry,
                                                'outSR': outSR,
                                                'objectIds': objectIds,
-                                               'time': 
+                                               'time':
                                                     utils.pythonvaluetotime(
                                                         time),
                                                'maxAllowableOffset':
@@ -761,12 +762,12 @@ class MapLayer(Layer):
         return self._json_struct['copyrightText']
     @property
     def parentLayer(self):
-        return self._get_subfolder("../%s/" % 
+        return self._get_subfolder("../%s/" %
                                    self._json_struct['parentLayer']['id'],
                                    MapLayer)
     @property
     def subLayers(self):
-        return [self._get_subfolder("../%s/" % 
+        return [self._get_subfolder("../%s/" %
                                     layer['parentLayer']['id'],
                                     MapLayer)
                 for layer in self._json_struct['subLayers']]
@@ -852,7 +853,7 @@ class ExportMapResult(JsonResult):
 class IdentifyOrFindResult(JsonResult):
     """Represents the result of a Find or Identify operation performed on a
        Map Service."""
-
+    __post__ = True
     @property
     def results(self):
         def resiter():
@@ -862,7 +863,7 @@ class IdentifyOrFindResult(JsonResult):
                 else:
                     geom = geometry.NullGeometry()
                 geom.attributes = result.get('attributes')
-                for key in ('displayFieldName', 'value', 
+                for key in ('displayFieldName', 'value',
                             'layerId', 'layerName'):
                     geom.attributes[key] = result[key]
                 yield geom
@@ -891,8 +892,8 @@ class MapService(Service):
            result of this operation is a map image resource. This resource
            provides information about the exported map image such as its URL,
            its width and height, extent and scale."""
-        return self._get_subfolder('export/', ExportMapResult, 
-                                              {'bbox': bbox, 
+        return self._get_subfolder('export/', ExportMapResult,
+                                              {'bbox': bbox,
                                                'size': size,
                                                'dpi': dpi,
                                                'imageSR': imageSR,
@@ -901,12 +902,12 @@ class MapService(Service):
                                                'layerDefs': layerDefs,
                                                'layers': layers,
                                                'transparent': transparent,
-                                               'time': 
+                                               'time':
                                                     utils.pythonvaluetotime(
                                                         time)
                                                 })
 
-    def Identify(self, Geometry, sr=None, layers=None, tolerance=1, 
+    def Identify(self, Geometry, sr=None, layers=None, tolerance=1,
                  mapExtent=None, imageDisplay=None, returnGeometry=True):
         """The identify operation is performed on a map service resource. The
            result of this operation is an identify results resource. Each
@@ -918,37 +919,39 @@ class MapService(Service):
         if sr is None:
             sr = Geometry.spatialReference.wkid
         geo_json = json.dumps(Geometry._json_struct_without_sr)
-        return self._get_subfolder('identify/', IdentifyOrFindResult,
+
+        res = self._get_subfolder('identify/', IdentifyOrFindResult,
                                                 {'geometry': geo_json,
                                                  'geometryType': gt,
                                                  'sr': sr,
                                                  'layers': layers,
                                                  'tolerance': tolerance,
                                                  'mapExtent': mapExtent,
-                                                 'imageDisplay': 
+                                                 'imageDisplay':
                                                     imageDisplay,
                                                  'returnGeometry':
                                                     returnGeometry})
+        return res
 
-    def Find(self, searchText, contains=True, searchFields=None, sr=None, 
+    def Find(self, searchText, contains=True, searchFields=None, sr=None,
              layers=None, returnGeometry=True):
         """The find operation is performed on a map service resource. The
            result of this operation is a find results resource. Each result
            includes  its value, feature ID, field name, layer ID, layer name,
            geometry, geometry type, and attributes in the form of name-value
            pairs."""
-        return self._get_subfolder('find/', IdentifyOrFindResult, 
+        return self._get_subfolder('find/', IdentifyOrFindResult,
                                             {'searchText': searchText,
                                              'contains': contains,
                                              'searchFields': searchFields,
-                                             'sr': sr, 
+                                             'sr': sr,
                                              'layers': layers,
                                              'returnGeometry': returnGeometry})
 
     def GenerateKML(self, docName, layers, layerOptions='composite'):
         """The generateKml operation is performed on a map service resource.
-           The result of this operation is a KML document wrapped in a KMZ 
-           file. The document contains a network link to the KML Service 
+           The result of this operation is a KML document wrapped in a KMZ
+           file. The document contains a network link to the KML Service
            endpoint with properties and parameters you specify.
 
            B{Layer Options:}
@@ -958,16 +961,16 @@ class MapService(Service):
              - nonComposite: Vector layers as vectors and raster layers as
                              images."""
         return self._get_subfolder('generateKml/', GenerateKMLResult,
-                                       {'docName': docName, 
+                                       {'docName': docName,
                                         'layers': layers,
                                         'layerOptions': layerOptions})
 
     def tile(self, row, col, zoomlevel):
         """For cached maps, this resource represents a single cached tile for
-           the map. The image bytes for the tile at the specified level, row 
+           the map. The image bytes for the tile at the specified level, row
            and column are directly streamed to the client. If the tile is not
            found, an HTTP status code of 404 (Not found) is returned."""
-        return self._get_subfolder("tile/%s/%s/%s/" % (row, col, zoomlevel), 
+        return self._get_subfolder("tile/%s/%s/%s/" % (row, col, zoomlevel),
                                    MapTile)
 
     @property
@@ -1029,8 +1032,8 @@ class MapService(Service):
     @property
     def supportedImageFormatTypes(self):
         """Return a list of supported image formats for this Map Service"""
-        return [x.strip() 
-                  for x in 
+        return [x.strip()
+                  for x in
                     self._json_struct['supportedImageFormatTypes'].split(',')]
 
 class FindAddressCandidatesResult(JsonResult):
@@ -1095,31 +1098,31 @@ class GeocodeService(Service):
             if field['required'] and field['name'] not in fields:
                 required_unset_fields.append(field['name'])
         if required_unset_fields:
-            raise ValueError("Required field%s not set for Geocode: %s" % 
-                               ('' if len(required_unset_fields) == 1 
+            raise ValueError("Required field%s not set for Geocode: %s" %
+                               ('' if len(required_unset_fields) == 1
                                    else 's', ', '.join(required_unset_fields)))
         query = fields.copy()
         query['outFields'] = outFields
         if outSR:
-            query['outSR'] = (outSR.wkid 
+            query['outSR'] = (outSR.wkid
                                 if isinstance(outSR, geometry.SpatialReference)
                                 else outSR)
-        return self._get_subfolder('findAddressCandidates/', 
+        return self._get_subfolder('findAddressCandidates/',
                                    FindAddressCandidatesResult, query)
 
     def ReverseGeocode(self, location, distance, outSR=None):
-        """The reverseGeocode operation is performed on a geocode service 
+        """The reverseGeocode operation is performed on a geocode service
            resource. The result of this operation is a reverse geocoded address
            resource. This resource provides information about all the address
            fields pertaining to the reverse geocoded address as well as its
            exact location."""
         if outSR:
-            outSR = (outSR.wkid 
+            outSR = (outSR.wkid
                        if isinstance(outSR, geometry.SpatialReference)
                        else outSR)
 
-        return self._get_subfolder('reverseGeocode/', ReverseGeocodeResult, 
-                                                      {'location': location, 
+        return self._get_subfolder('reverseGeocode/', ReverseGeocodeResult,
+                                                      {'location': location,
                                                        'distance': distance,
                                                        'outSR': outSR})
 
@@ -1149,18 +1152,18 @@ class GPMessage(object):
 
 @Folder._register_service_type
 class GPService(Service):
-    """Geoprocessing is a fundamental part of enterprise GIS operations. 
-       Geoprocessing provides the data analysis, data management, and data 
+    """Geoprocessing is a fundamental part of enterprise GIS operations.
+       Geoprocessing provides the data analysis, data management, and data
        conversion tools necessary for all GIS users.
 
        A geoprocessing service represents a collection of published tools that
-       perform tasks necessary for manipulating and analyzing geographic 
+       perform tasks necessary for manipulating and analyzing geographic
        information across a wide range of disciplines. Each tool performs one
        or more operations, such as projecting a data set from one map
-       projection to another, adding fields to a table, or creating buffer 
-       zones around features. A tool accepts input (such as feature sets, 
+       projection to another, adding fields to a table, or creating buffer
+       zones around features. A tool accepts input (such as feature sets,
        tables, and property values), executes operations using the input data,
-       and generates output for presentation in a map or further processing by 
+       and generates output for presentation in a map or further processing by
        the client. Tools can be executed synchronously (in sequence) or
        asynchronously."""
     __service_type__ = "GPServer"
@@ -1296,7 +1299,7 @@ class GPJob(JsonPostResult):
     _jobstatus = None
     def __init__(self, url, file_data=None):
         super(GPJob, self).__init__(url, file_data)
-        self._jobstatus = self._get_subfolder('../jobs/%s/' % 
+        self._jobstatus = self._get_subfolder('../jobs/%s/' %
                                               self._json_struct['jobId'],
                                               GPJobStatus)
     @property
@@ -1324,7 +1327,7 @@ class GPJob(JsonPostResult):
         return self._jobstatus.results[attr]
 
 class GPExecutionResult(JsonResult):
-    """The GPExecutionResult object represents the output of running a 
+    """The GPExecutionResult object represents the output of running a
        synchronous GPTask."""
     _results = None
     @property
@@ -1364,7 +1367,7 @@ class GPExecutionResult(JsonResult):
 class GPTask(RestURL):
     """The GP task resource represents a single task in a GP service published
        using the ArcGIS Server. It provides basic information about the task
-       including its name and display name. It also provides detailed 
+       including its name and display name. It also provides detailed
        information about the various input and output parameters exposed by the
        task"""
     __parent_type__ = GPService
@@ -1404,7 +1407,7 @@ class GPTask(RestURL):
         fp = self.__expandparamstodict(params, kw)
         return self._get_subfolder('execute/', GPExecutionResult, fp)
     def SubmitJob(self, *params, **kw):
-        """Asynchronously execute the specified GP task. This will return a 
+        """Asynchronously execute the specified GP task. This will return a
            Geoprocessing Job object. Parameters are passed in either in order
            or as keywords."""
         fp = self.__expandparamstodict(params, kw)
@@ -1417,7 +1420,7 @@ class GPTask(RestURL):
            False with the case of the execution result. This can be used to
            treat both types of execution as the same in your code; with the
            idiom
-           
+
               >>> result = task(Param_1, Param_2, Param_3, ...)
               >>> while result.running:
               ...     time.sleep(0.125)
@@ -1461,12 +1464,12 @@ class GPTask(RestURL):
 
 
 class GeometryResult(JsonResult):
-    """Represents the output of a Project, Simplify or Buffer operation 
+    """Represents the output of a Project, Simplify or Buffer operation
        performed by an ArcGIS REST API Geometry service."""
 
     @property
     def geometries(self):
-        return [geometry.fromJson(geo) 
+        return [geometry.fromJson(geo)
                 for geo in self._json_struct['geometries']]
 
 class LengthsResult(JsonResult):
@@ -1478,7 +1481,7 @@ class LengthsResult(JsonResult):
         return map(float(length) for length in self._json_struct['lengths'])
 
 class AreasAndLengthsResult(LengthsResult):
-    """Represents the output of a AreasAndLengths operation performed by an 
+    """Represents the output of a AreasAndLengths operation performed by an
        ArcGIS REST API Geometry service."""
 
     @property
@@ -1492,7 +1495,7 @@ class LabelPointsResult(JsonResult):
     @property
     def labelPoints(self):
         """Label points for the provided polygon(s)."""
-        return [geometry.fromJson(geo) 
+        return [geometry.fromJson(geo)
                 for geo in self._json_struct['labelPoints']]
 
 @Folder._register_service_type
@@ -1521,22 +1524,22 @@ class GeometryService(Service):
         geometry_types = set([x.__geometry_type__ for x in geometries])
         assert len(geometry_types) == 1, "Too many geometry types"
         geo_json = json.dumps({'geometryType': list(geometry_types)[0],
-                    'geometries': [geo._json_struct_without_sr 
+                    'geometries': [geo._json_struct_without_sr
                                         for geo in geometries]
                     })
 
-        return self._get_subfolder('project', GeometryResult, 
+        return self._get_subfolder('project', GeometryResult,
                                    {'geometries': geo_json,
                                     'inSR': inSR,
                                     'outSR': outSR
                                    })
 
     def Simplify(self, geometries, sr=None):
-        """The simplify operation is performed on a geometry service resource. 
-           Simplify permanently alters the input geometry so that the geometry 
-           becomes topologically consistent. This resource applies the ArcGIS 
-           simplify operation to each geometry in the input array. For more 
-           information, see ITopologicalOperator.Simplify Method and 
+        """The simplify operation is performed on a geometry service resource.
+           Simplify permanently alters the input geometry so that the geometry
+           becomes topologically consistent. This resource applies the ArcGIS
+           simplify operation to each geometry in the input array. For more
+           information, see ITopologicalOperator.Simplify Method and
            IPolyline.SimplifyNetwork Method."""
 
         if isinstance(geometries, geometry.Geometry):
@@ -1551,7 +1554,7 @@ class GeometryService(Service):
                     'geometries': [geo._json_struct_without_sr
                                         for geo in geometries]
                     })
-        return self._get_subfolder('simplify', GeometryResult, 
+        return self._get_subfolder('simplify', GeometryResult,
                                    {'geometries': geo_json,
                                     'sr': sr
                                    })
@@ -1585,7 +1588,7 @@ class GeometryService(Service):
         if bufferSR is None:
             bufferSR = geometries[0].spatialReference.wkid
 
-        return self._get_subfolder('buffer', GeometryResult, 
+        return self._get_subfolder('buffer', GeometryResult,
                                    {'geometries': geo_json,
                                     'distances': distances,
                                     'unit': unit,
@@ -1595,7 +1598,7 @@ class GeometryService(Service):
                                     'bufferSR': bufferSR
                                    })
 
-    def AreasAndLengths(self, polygons, sr=None, lengthUnit=None, 
+    def AreasAndLengths(self, polygons, sr=None, lengthUnit=None,
                         areaUnit=None):
         """The areasAndLengths operation is performed on a geometry service
            resource. This operation calculates areas and perimeter lengths for
@@ -1613,13 +1616,13 @@ class GeometryService(Service):
         geo_json = json.dumps([polygon._json_struct_without_sr
                                    for polygon in polygons])
 
-        return self._get_subfolder('areasAndLengths', AreasAndLengthsResult, 
+        return self._get_subfolder('areasAndLengths', AreasAndLengthsResult,
                                     {'polygons': geo_json,
                                      'sr': sr,
                                      'lengthUnit': lengthUnit,
                                      'areaUnit': areaUnit
                                     })
-        
+
     def Lengths(self, polylines, sr=None, lengthUnit=None, geodesic=None):
         """The lengths operation is performed on a geometry service resource.
            This operation calculates the lengths of each polyline specified in
@@ -1640,7 +1643,7 @@ class GeometryService(Service):
         if geodesic is not None:
             geodesic = bool(geodesic)
 
-        return self._get_subfolder('lengths', LengthsResult, 
+        return self._get_subfolder('lengths', LengthsResult,
                                     {'polylines': geo_json,
                                      'sr': sr,
                                      'lengthUnit': lengthUnit,
@@ -1664,7 +1667,7 @@ class GeometryService(Service):
         geo_json = json.dumps([polygon._json_struct_without_sr
                                  for polygon in polygons])
 
-        return self._get_subfolder('labelPoints', LabelPointsResult, 
+        return self._get_subfolder('labelPoints', LabelPointsResult,
                                     {'polygons': geo_json,
                                      'sr': sr
                                     })
@@ -1826,7 +1829,7 @@ class GeometryService(Service):
         geo_json = json.dumps([polyline._json_struct_without_sr
                                  for polyline in polylines])
 
-        return self._get_subfolder('trimExtend', GeometryResult, 
+        return self._get_subfolder('trimExtend', GeometryResult,
                                     {'polylines': geo_json,
                                      'trimExtendTo': trimExtendTo,
                                      'extendHow': extendHow,
@@ -1837,7 +1840,7 @@ class GeometryService(Service):
            resource. The AutoComplete operation simplifies the process of
            constructing new polygons that are adjacent to other polygons. It
            constructs polygons that fill in the gaps between existing polygons
-           and a set of polylines."""        
+           and a set of polylines."""
         raise NotImplementedError()
     def Cut(self, cutter=None, target=None, sr=None):
         """The cut operation is performed on a geometry service resource. This
@@ -1893,7 +1896,7 @@ class ImageService(Service):
     __service_type__ = "ImageServer"
 
     def ExportImage(self, bbox=None, size=None, imageSR=None, bboxSR=None,
-                    format=None, pixelType=None, noData=None, 
+                    format=None, pixelType=None, noData=None,
                     interpolation=None, compressionQuality=None, bandIds=None,
                     mosaicProperties=None, viewpointProperties=None,
                     mosaicRule=None, renderingRule=None):
@@ -1902,7 +1905,7 @@ class ImageService(Service):
            provides information about the exported map image such as its URL,
            its width and height, extent and scale."""
 
-        return self._get_subfolder('exportImage/', ExportImageResult, 
+        return self._get_subfolder('exportImage/', ExportImageResult,
                                     {'bbox': bbox,
                                      'size': size,
                                      'imageSR': imageSR,
@@ -1911,7 +1914,7 @@ class ImageService(Service):
                                      'pixelType': pixelType,
                                      'noData': noData,
                                      'interpolation': interpolation,
-                                     'compressionQuality': compressionQuality, 
+                                     'compressionQuality': compressionQuality,
                                      'bandIds': bandIds,
                                      'mosaicProperties': mosaicProperties,
                                      'viewpointProperties': viewpointProperties,
@@ -2049,11 +2052,11 @@ class NetworkLayer(Layer):
     @property
     def networkClasses(self):
         return self._json_struct['networkClasses']
-    def SolveClosestFacility(self, facilities=None, 
-                             incidents=None, 
+    def SolveClosestFacility(self, facilities=None,
+                             incidents=None,
                              barriers=None,
                              polylineBarriers=None,
-                             polygonBarriers=None, 
+                             polygonBarriers=None,
                              attributeParameterValues=None,
                              returnDirections=None,
                              directionsLanguage=None,
@@ -2116,7 +2119,7 @@ class RouteNetworkLayer(NetworkLayer):
               returnRoutes=None, returnStops=None, returnBarriers=None,
               outSR=None, ignoreInvalidLocations=None, outputLines=None,
               findBestSequence=None, preserveFirstStop=None,
-              preserveLastStop=None, useTimeWindows=None, startTime=None, 
+              preserveLastStop=None, useTimeWindows=None, startTime=None,
               accumulateAttributeNames=None, impedanceAttributeName=None,
               restrictionAttributeNames=None, restrictUTurns=None,
               useHierarchy=None, directionsLanguage=None,
@@ -2199,8 +2202,8 @@ class GeoDataVersion(RestURL):
         return self._json_struct['childVersions']
     @property
     def children(self):
-        return [self._get_subfolder("../%s" % version_name, 
-                                    GeoDataVersion) 
+        return [self._get_subfolder("../%s" % version_name,
+                                    GeoDataVersion)
                     for version_name in
                         self._json_struct['childVersions']]
     @property
@@ -2208,8 +2211,8 @@ class GeoDataVersion(RestURL):
         return self._json_struct['ancestorVersions']
     @property
     def ancestors(self):
-        return [self._get_subfolder("../%s" % version_name, 
-                                    GeoDataVersion) 
+        return [self._get_subfolder("../%s" % version_name,
+                                    GeoDataVersion)
                     for version_name in
                         self._json_struct['ancestorVersions']]
 
@@ -2290,7 +2293,7 @@ class GeoDataService(Service):
         return self._json_struct['defaultWorkingVersion']
     @property
     def defaultWorkingVersion(self):
-        return self._get_subfolder("versions/%s/" % 
+        return self._get_subfolder("versions/%s/" %
                                    self.defaultWorkingVersionName,
                                    GeoDataVersion)
     @property
@@ -2367,7 +2370,7 @@ class GlobeLayer(Layer):
         return self._json_struct['fields']
     @property
     def parentLayer(self):
-        return self._get_subfolder("../%s/" % 
+        return self._get_subfolder("../%s/" %
                                    self._json_struct['parentLayer']['id'],
                                    GlobeLayer)
     @property
@@ -2403,7 +2406,7 @@ class FeatureLayerFeature(object):
             geom = geometry.fromJson(
                         self._json_struct['feature'].get('geometry',
                                                               None),
-                        self._json_struct['feature'].get('attributes', 
+                        self._json_struct['feature'].get('attributes',
                                                               {}))
         else:
             geom = geometry.NullGeometry()
@@ -2412,7 +2415,7 @@ class FeatureLayerFeature(object):
         return geom
     @property
     def attributes(self):
-        return self._json_struct['feature'].get('attributes', 
+        return self._json_struct['feature'].get('attributes',
                                                               {})
     @property
     def attachments(self):
@@ -2481,7 +2484,7 @@ class FeatureLayer(MapLayer):
            and indicates if the edit were successful or not. If not, it also
            includes an error code and an error description."""
         fd = {'features': ",".join(json.dumps(
-                                        feature._json_struct_for_featureset) 
+                                        feature._json_struct_for_featureset)
                                     for feature in features)}
         return self._get_subfolder("./addFeatures", JsonPostResult, fd)
     def UpdateFeatures(self, features):
@@ -2492,7 +2495,7 @@ class FeatureLayer(MapLayer):
            and indicates if the edit were successful or not. If not, it also
            includes an error code and an error description."""
         fd = {'features': ",".join(json.dumps(
-                                        feature._json_struct_for_featureset) 
+                                        feature._json_struct_for_featureset)
                                     for feature in features)}
         return self._get_subfolder("./updateFeatures", JsonPostResult, fd)
     def DeleteFeatures(self, objectIds=None, where=None, geometry=None,
@@ -2527,11 +2530,11 @@ class FeatureLayer(MapLayer):
         add_str, update_str = None, None
         if adds:
             add_str = ",".join(json.dumps(
-                                        feature._json_struct_for_featureset) 
+                                        feature._json_struct_for_featureset)
                                     for feature in adds)
         if updates:
             update_str = ",".join(json.dumps(
-                                        feature._json_struct_for_featureset) 
+                                        feature._json_struct_for_featureset)
                                     for feature in updates)
         return self._get_subfolder("./applyEdits", JsonPostResult,
                                                                  {'adds':
@@ -2541,7 +2544,7 @@ class FeatureLayer(MapLayer):
                                                                    'deletes':
                                                                         deletes
                                                                    })
-        
+
 
 @Folder._register_service_type
 class FeatureService(Service):
