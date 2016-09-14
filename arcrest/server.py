@@ -237,10 +237,11 @@ class RestURL(object):
                 req_dict = {'User-Agent' : USER_AGENT}
                 if self._referer:
                     req_dict['Referer'] = self._referer
-                request = compat.urllib2.Request(self.url, self.query
-                                                        if self.__post__
-                                                        else None,
-                                           req_dict)
+                if self.__post__:
+                    request = compat.urllib2.Request(self.url, self.query,req_dict)
+                    request.get_method = lambda: 'POST'
+                else:
+                    request = compat.urllib2.Request(self.url, None,req_dict)
             handle = compat.urllib2.urlopen(request)
             # Handle the special case of a redirect (only follow once) --
             # Note that only the first 3 components (protocol, hostname, path)
